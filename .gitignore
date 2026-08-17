@@ -1,0 +1,10 @@
+.idea/
+.venv/
+study-pilot/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.db
+.env
+.DS_Store
+Thumbs.db
