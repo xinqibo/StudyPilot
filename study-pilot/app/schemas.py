@@ -30,3 +30,14 @@ class LearningPlan(BaseModel):
     minutes_per_day: int
     weekly_objectives: list[str]
     tasks: list[LearningTask]
+
+class GeneratedTask(BaseModel):
+    title: str = Field(min_length=2,max_length=100)
+    description: str = Field(min_length=2,max_length=500)
+    estimated_minutes: int = Field(gt=15,le=480)
+    acceptance_criteria: list[str]= Field(min_length=1)
+
+
+class GeneratedPlan(BaseModel):
+    weekly_objectives: list[str]= Field(min_length=1)
+    tasks: list[GeneratedTask] = Field(min_length=1)

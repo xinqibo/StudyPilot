@@ -17,6 +17,8 @@ from app.db_models import LearningPlanDB,LearningTaskDB
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from app.llm import generate_learning_plan
+
 Base.metadata.create_all(bind=engine)
 
 DatabaseSession = Annotated[
@@ -37,16 +39,18 @@ async def home():
 
 @app.post("/plans",response_model=LearningPlan,status_code=status.HTTP_201_CREATED)
 def generate_plan(request:PlanRequest,db:DatabaseSession):
-    generated_plan = create_plan(
-        request=request,
-        plan_id=0,
-    )
+    # generated_plan = create_plan(
+    #     request=request,
+    #     plan_id=0,
+    # )
+
+    generated_plan = generate_learning_plan(request)
 
     db_plan = LearningPlanDB(
-        goal=generated_plan.goal,
-        current_level=generated_plan.current_level,
-        duration_weeks=generated_plan.duration_weeks,
-        minutes_per_day=generated_plan.minutes_per_day,
+        goal=request.goal,
+        current_level=request.current_level,
+        duration_weeks=request.duration_weeks,
+        minutes_per_day=request.minutes_per_day,
         weekly_objectives=generated_plan.weekly_objectives,
     )
 
@@ -56,7 +60,7 @@ def generate_plan(request:PlanRequest,db:DatabaseSession):
             description=task.description,
             estimated_minutes=task.estimated_minutes,
             acceptance_criteria=task.acceptance_criteria,
-            completed=task.completed,
+            completed=False,
         )
 
         db_plan.tasks.append(db_task)

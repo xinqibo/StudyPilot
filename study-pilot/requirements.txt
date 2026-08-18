@@ -4,3 +4,5 @@ pydantic
 pytest
 httpx
 sqlalchemy
+openai
+python-dotenv

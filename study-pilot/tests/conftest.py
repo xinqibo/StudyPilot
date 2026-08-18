@@ -1,3 +1,10 @@
+from asyncio import tasks
+
+from app.schemas import  (
+    GeneratedPlan,
+    GeneratedTask,
+    PlanRequest,
+)
 from collections.abc import Generator
 
 import pytest
@@ -42,3 +49,43 @@ def create_test_database():
     yield
 
     Base.metadata.drop_all(bind=test_engine)
+@pytest.fixture(autouse=True)
+def mock_generate_learning_plan(monkeypatch):
+
+    def fake_generate_learning_plan(
+            request: PlanRequest,
+    ) -> GeneratedPlan:
+        weekly_objectives = [
+            f"第{week}周：学习并实践{request.goal}"
+            for week in range(1,request.duration_weeks+1)
+        ]
+
+        tasks = [
+            GeneratedTask(
+                title=f"第{week}周学习任务",
+                description=(
+                    f"根据“{request.current_level}”的基础，"
+                    f"继续学习和实践 {request.goal}"
+                ),
+                estimated_minutes=min(
+                    60,
+                    request.minutes_per_day,
+                ),
+                acceptance_criteria=[
+                    "完成本周学习任务",
+                    "整理一篇学习笔记",
+                    "完成至少一个代码练习",
+                ],
+            )
+            for week in range(1,request.duration_weeks+1)
+        ]
+
+        return GeneratedPlan(
+            weekly_objectives=weekly_objectives,
+            tasks=tasks,
+        )
+
+    monkeypatch.setattr(
+        "app.main.generate_learning_plan",
+        fake_generate_learning_plan,
+    )
