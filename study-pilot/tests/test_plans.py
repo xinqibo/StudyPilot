@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from openai.types.responses import response
 
 from app.main import app
 
@@ -146,3 +147,25 @@ def test_reject_invalid_duration():
     )
 
     assert response.status_code == 422
+
+def test_fallback_when_llm_fails(monkeypatch):
+    def raise_llm_error(request):
+        raise RuntimeError("模拟大模型服务不可用")
+
+    monkeypatch.setattr(
+        "app.main.generate_learning_plan",
+        raise_llm_error,
+    )
+
+    response = client.post(
+        "/plans",
+        json=valid_request(),
+    )
+
+    assert response.status_code == 201, response.text
+
+    data = response.json()
+
+    assert data["goal"] == "学习 LangGraph"
+    assert len(data["weekly_objectives"]) == 4
+    assert len(data["tasks"]) == 4

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI,HTTPException,status
 
 from app.schemas import LearningPlan,LearningTask,PlanRequest,TaskUpdate
@@ -18,6 +20,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.llm import generate_learning_plan
+
+logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine)
 
@@ -43,9 +47,18 @@ def generate_plan(request:PlanRequest,db:DatabaseSession):
     #     request=request,
     #     plan_id=0,
     # )
+    try:
+        generated_plan = generate_learning_plan(request)
+    except Exception :
+        logger.exception(
+            "大模型生成失败，改用本地模板生成学习计划"
+        )
 
-    generated_plan = generate_learning_plan(request)
-
+        generated_plan = create_plan(
+            request=request,
+            plan_id=0,
+        )
+        
     db_plan = LearningPlanDB(
         goal=request.goal,
         current_level=request.current_level,
