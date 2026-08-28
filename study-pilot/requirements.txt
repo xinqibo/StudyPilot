@@ -6,3 +6,4 @@ httpx
 sqlalchemy
 openai
 python-dotenv
+langgraph

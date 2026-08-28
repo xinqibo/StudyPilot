@@ -38,6 +38,17 @@ def override_get_db() -> Generator[Session,None,None]:
     finally:
         db.close()
 
+@pytest.fixture
+def db_session() -> Generator[Session,None,None]:
+    """为 Agent 测试提供独立的内容数据库会话。"""
+
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.rollback()
+        db.close()
+        
 app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(autouse=True)
