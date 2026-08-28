@@ -177,3 +177,51 @@ def test_agent_unknown_intent(db_session: Session):
 
     assert state["intent"] == "unknown"
     assert state["final_answer"] == "抱歉，我暂时无法理解你的请求。"
+
+def test_extract_plan_and_task_ids():
+    from app.agent import extract_ids_from_text
+
+    plan_id, task_id = extract_ids_from_text(
+        "把计划3中的任务10标记完成"
+    )
+
+    assert plan_id == 3
+    assert task_id == 10
+
+def test_extract_only_plan_id():
+    from app.agent import extract_ids_from_text
+
+    plan_id, task_id = extract_ids_from_text(
+        "查询计划5的完整内容"
+    )
+
+    assert plan_id == 5
+    assert task_id is None
+
+def test_agent_extracts_ids_from_user_input(
+    db_session: Session,
+):
+    plan_id, task_ids = create_test_plan(db_session)
+    task_id = task_ids[0]
+
+    state = run_agent_graph(
+        user_input=(
+            f"把计划{plan_id}中的任务{task_id}标记完成"
+        ),
+        db=db_session,
+    )
+
+    assert state["intent"] == "complete_task"
+    assert state["plan_id"] == plan_id
+    assert state["task_id"] == task_id
+    assert state["final_answer"] is not None
+    assert "已标记为完成" in state["final_answer"]
+
+    db_session.expire_all()
+    saved_task = db_session.get(
+        LearningTaskDB,
+        task_id,
+    )
+
+    assert saved_task is not None
+    assert saved_task.completed is True

@@ -1,3 +1,4 @@
+import re
 from typing import Literal,TypedDict
 
 from sqlalchemy.orm import Session
@@ -34,10 +35,39 @@ def create_initial_state(
         tool_result=None,
         final_answer=None,
     )
+def extract_ids_from_text(
+        user_input: str,
+) -> tuple[int | None ,int | None]:
+    """从用户输入中提取计划 ID 和任务 ID。"""
+    plan_match = re.search(
+        r"计划\s*(\d+)",
+        user_input,
+    )
+    task_match = re.search(
+        r"任务\s*(\d+)",
+        user_input,
+    )
+
+    plan_id = (
+        int(plan_match.group(1))
+        if plan_match
+        else None
+    )
+
+    task_id = (
+        int(task_match.group(1))
+        if task_match
+        else None
+    )
+
+    return plan_id, task_id
+
 def recognize_intent(state: AgentState) ->AgentState:
     """根据关键词识别用户想要执行的操作"""
 
     user_input = state["user_input"]
+
+    #1.识别意图
 
     if "未完成" in user_input or "待完成" in user_input:
             intent : AgentIntent = "get_pending_tasks"
@@ -48,8 +78,21 @@ def recognize_intent(state: AgentState) ->AgentState:
     else:
         intent = "unknown"
 
+    #2. 从文本中提取 ID
+    extracted_plan_id,extracted_task_id= (
+        extract_ids_from_text(user_input)
+    )
+
+    #3.复制旧状态
     new_state = state.copy()
     new_state["intent"] = intent
+
+    #4.只有没有手动传入ID时，才使用正则提取的 ID
+    if new_state["plan_id"] is None:
+        new_state["plan_id"] = extracted_plan_id
+
+    if new_state["task_id"] is None:
+        new_state["task_id"] = extracted_task_id
 
     return new_state
 
@@ -72,7 +115,7 @@ def execute_tool(
         from app.agent_tools import complete_task_tool
 
         return complete_task_tool(state,db)
-    
+
     new_state = state.copy()
     new_state["tool_result"] = (
         f"暂时不支持意图：{state['intent']}"

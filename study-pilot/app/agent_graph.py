@@ -22,6 +22,8 @@ def build_agent_graph(db: Session):
 
         return {
             "intent":updated_state["intent"],
+            "plan_id":updated_state["plan_id"],
+            "task_id":updated_state["task_id"],
         }
 
     def execute_tool_node(
