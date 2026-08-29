@@ -1,8 +1,13 @@
+from fastapi.testclient import TestClient
+
+from app.main import app
+
 from sqlalchemy.orm import Session
 
 from app.agent_graph import run_agent_graph
 from app.db_models import LearningPlanDB, LearningTaskDB
 
+client = TestClient(app)
 
 def create_test_plan(db: Session) -> tuple[int, list[int]]:
     """创建一条计划和两条测试任务。"""
@@ -218,6 +223,61 @@ def test_agent_extracts_ids_from_user_input(
     assert "已标记为完成" in state["final_answer"]
 
     db_session.expire_all()
+    saved_task = db_session.get(
+        LearningTaskDB,
+        task_id,
+    )
+
+    assert saved_task is not None
+    assert saved_task.completed is True
+
+def test_agent_chat_api_get_plan(
+    db_session: Session,
+):
+    plan_id, task_ids = create_test_plan(db_session)
+
+    response = client.post(
+        "/agent/chat",
+        json={
+            "message": f"查询计划{plan_id}的完整内容",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+
+    data = response.json()
+
+    assert data["intent"] == "get_plan"
+    assert data["plan_id"] == plan_id
+    assert data["task_id"] is None
+    assert "学习 LangGraph" in data["answer"]
+
+def test_agent_chat_api_complete_task(
+    db_session: Session,
+):
+    plan_id, task_ids = create_test_plan(db_session)
+    task_id = task_ids[0]
+
+    response = client.post(
+        "/agent/chat",
+        json={
+            "message": (
+                f"把计划{plan_id}中的任务{task_id}标记完成"
+            ),
+        },
+    )
+
+    assert response.status_code == 200, response.text
+
+    data = response.json()
+
+    assert data["intent"] == "complete_task"
+    assert data["plan_id"] == plan_id
+    assert data["task_id"] == task_id
+    assert "已标记为完成" in data["answer"]
+
+    db_session.expire_all()
+
     saved_task = db_session.get(
         LearningTaskDB,
         task_id,

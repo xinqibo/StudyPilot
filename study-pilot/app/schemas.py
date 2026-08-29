@@ -1,5 +1,7 @@
 from pydantic import  BaseModel,Field
-from pydantic import BaseModel,ConfigDict
+from pydantic import BaseModel,ConfigDict,Field
+from typing import Literal
+
 
 class PlanRequest(BaseModel):
         goal: str=Field(min_length=2,max_length=100)
@@ -41,3 +43,33 @@ class GeneratedTask(BaseModel):
 class GeneratedPlan(BaseModel):
     weekly_objectives: list[str]= Field(min_length=1)
     tasks: list[GeneratedTask] = Field(min_length=1)
+
+class AgentChatRequest(BaseModel):
+    """Agent 对话请求"""
+
+    message: str = Field(min_length=1,max_length=500)
+
+    #可选：文本没有包含 ID 时可以手动提供
+    plan_id: int| None =Field(
+        default=None,
+        ge=1,
+    )
+
+    task_id : int | None = Field(
+        default=None,
+        ge=1,
+    )
+
+class AgentChatResponse(BaseModel):
+    """Agent 对话响应。"""
+
+    intent :Literal[
+        "get_plan",
+        "get_pending_tasks",
+        "complete_task",
+        "unknown",
+    ]
+
+    plan_id: int | None
+    task_id: int | None
+    answer: str

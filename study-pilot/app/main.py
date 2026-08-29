@@ -2,11 +2,13 @@ import logging
 
 from fastapi import FastAPI,HTTPException,status
 
-from app.schemas import LearningPlan,LearningTask,PlanRequest,TaskUpdate
+from app.schemas import AgentChatRequest,AgentChatResponse,LearningPlan,LearningTask,PlanRequest,TaskUpdate
 from app.services import create_plan
 
 from app.database import  Base,engine
 from app import db_models
+
+from app.agent_graph import run_agent_graph
 
 from typing import Annotated
 from fastapi import Depends
@@ -159,3 +161,30 @@ def update_task(
     db.refresh(task)
 
     return LearningTask.model_validate(task)
+
+@app.post(
+    "/agent/chat",
+    response_model=AgentChatResponse,
+)
+def chat_with_agent(
+        request:AgentChatRequest,
+        db:DatabaseSession,
+) -> AgentChatResponse:
+    """接收自然语言并执行 Agent 工作流。"""
+
+    state = run_agent_graph(
+        user_input=request.message,
+        plan_id=request.plan_id,
+        task_id=request.task_id,
+        db=db,
+    )
+
+    return AgentChatResponse(
+        intent=state["intent"],
+        plan_id=state["plan_id"],
+        task_id=state["task_id"],
+        answer=(
+            state["final_answer"]
+            or "抱歉，Agent 没有生成有效回答。"
+        ),
+    )
