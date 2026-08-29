@@ -70,8 +70,8 @@ def recognize_intent(state: AgentState) ->AgentState:
     #1.识别意图
 
     if "未完成" in user_input or "待完成" in user_input:
-            intent : AgentIntent = "get_pending_tasks"
-    elif "完成任务" in user_input or "标记完成" in user_input:
+        intent : AgentIntent = "get_pending_tasks"
+    elif "完成任务" in user_input or "标记完成" in user_input or "标记为完成" in user_input or "设为完成" in user_input:
         intent = "complete_task"
     elif "计划" in user_input:
         intent = "get_plan"

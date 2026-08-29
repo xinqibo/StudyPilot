@@ -1,0 +1,92 @@
+[
+  {
+    "name": "正常查询计划",
+    "category": "normal",
+    "message": "查看计划1的完整内容",
+    "expected_intent": "get_plan",
+    "expected_plan_id": 1,
+    "expected_task_id": null,
+    "expected_keywords": ["计划", "任务"]
+  },
+  {
+    "name": "正常查询未完成任务",
+    "category": "normal",
+    "message": "查看计划1中未完成的任务",
+    "expected_intent": "get_pending_tasks",
+    "expected_plan_id": 1,
+    "expected_task_id": null,
+    "expected_keywords": ["未完成"]
+  },
+  {
+    "name": "正常完成任务",
+    "category": "normal",
+    "message": "把计划1中的任务1标记为完成",
+    "expected_intent": "complete_task",
+    "expected_plan_id": 1,
+    "expected_task_id": 1,
+    "expected_keywords": ["完成"]
+  },
+  {
+    "name": "查询计划时缺少计划ID",
+    "category": "missing_id",
+    "message": "查看这个学习计划",
+    "expected_intent": "get_plan",
+    "expected_plan_id": null,
+    "expected_task_id": null,
+    "expected_keywords": ["计划ID"]
+  },
+  {
+    "name": "完成任务时缺少任务ID",
+    "category": "missing_id",
+    "message": "把计划1中的任务标记为完成",
+    "expected_intent": "complete_task",
+    "expected_plan_id": 1,
+    "expected_task_id": null,
+    "expected_keywords": ["任务ID"]
+  },
+  {
+    "name": "完成任务时缺少计划ID",
+    "category": "missing_id",
+    "message": "把任务1标记为完成",
+    "expected_intent": "complete_task",
+    "expected_plan_id": null,
+    "expected_task_id": 1,
+    "expected_keywords": ["计划ID"]
+  },
+  {
+    "name": "计划不存在",
+    "category": "not_found",
+    "message": "查看计划999的完整内容",
+    "expected_intent": "get_plan",
+    "expected_plan_id": 999,
+    "expected_task_id": null,
+    "expected_keywords": ["没有找到"]
+  },
+  {
+    "name": "任务不存在",
+    "category": "not_found",
+    "message": "把计划1中的任务999标记为完成",
+    "expected_intent": "complete_task",
+    "expected_plan_id": 1,
+    "expected_task_id": 999,
+    "expected_keywords": ["没有找到"]
+  },
+  {
+    "name": "无关问题",
+    "category": "ambiguous",
+    "message": "杭州今天天气怎么样",
+    "expected_intent": "unknown",
+    "expected_plan_id": null,
+    "expected_task_id": null,
+    "expected_keywords": ["无法理解"]
+  },
+  {
+    "name": "过于模糊的请求",
+    "category": "ambiguous",
+    "message": "帮我处理一下",
+    "expected_intent": "unknown",
+    "expected_plan_id": null,
+    "expected_task_id": null,
+    "expected_keywords": ["无法理解"]
+  }
+]
