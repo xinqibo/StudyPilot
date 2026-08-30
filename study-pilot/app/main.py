@@ -1,4 +1,18 @@
 import logging
+import time
+import uuid
+
+from fastapi import Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from openai.types.beta import responses
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from app.logging_config import configure_logging
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI,HTTPException,status
 
@@ -37,6 +51,77 @@ app=FastAPI(
     description='AI学习规划与任务执行Agent',
     version='0.2.0',
 )
+
+@app.exception_handler(StarletteHTTPException)
+async def handle_http_exception(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error":{
+                "code":f"HTTP_{exc.status_code}",
+                "message":exc.detail,
+            }
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def handle_validation_exception(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error":{
+                "code":"VALIDATION_ERROR",
+                "message":"请求参数校验失败",
+                "details":jsonable_encoder(exc.errors()),
+            }
+        },
+    )
+
+@app.exception_handler(Exception)
+async def handle_unexpected_exception(request: Request, exc: Exception):
+    logger.exception(
+        "未处理异常：method=%s path=%s",
+        request.method,
+        request.url.path,
+    )
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error":{
+                "code":"INTERNAL_SERVER_ERROR",
+                "message":"服务器内部错误",
+            }
+        },
+    )
+
+@app.middleware("http")
+async def log_request(request: Request, call_next):
+    request_id = request.headers.get(
+        "X-Request-ID",
+        str(uuid.uuid4()),
+    )
+    start_time = time.perf_counter()
+
+    response = await call_next(request)
+
+    duration_ms = (
+        time.perf_counter() - start_time
+    )*1000
+
+    response.headers["X-Request-ID"] = request_id
+
+    logger.info(
+        "%s %s -> %s | %.2f ms | request_id=%s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+        request_id,
+    )
+
+    return response
 
 plans: dict[int,LearningPlan] = {}
 @app.get("/")

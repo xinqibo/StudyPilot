@@ -88,7 +88,10 @@ def test_get_nonexistent_plan():
     response = client.get("/plans/999")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "Plan not found"
+
+    data = response.json()
+    assert data["error"]["code"] =="HTTP_404"
+    assert data["error"]["message"] == "Plan not found"
 
 
 def test_complete_task():
@@ -114,15 +117,22 @@ def test_complete_task():
 
 
 def test_update_nonexistent_task():
-    client.post("/plans", json=valid_request())
+    create_response = client.post("/plans", json=valid_request())
+    assert create_response.status_code == 201
+
+    created_plan = create_response.json()
+    plan_id = created_plan["id"]
 
     response = client.patch(
-        "/plans/1/tasks/999",
+        f"/plans/{plan_id}/tasks/999",
         json={"completed": True},
     )
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "Task not found"
+
+    data = response.json()
+    assert data["error"]["code"] =="HTTP_404"
+    assert data["error"]["message"] == "Task not found"
 
 
 def test_reject_invalid_minutes():
