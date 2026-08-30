@@ -1,0 +1,62 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: Pytest (Python 3.13)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: study-pilot
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: study-pilot/requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest -v
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: study-pilot
+          file: study-pilot/Dockerfile
+          push: false
+          tags: studypilot-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
